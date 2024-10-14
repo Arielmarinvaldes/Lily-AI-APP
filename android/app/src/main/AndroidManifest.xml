@@ -1,0 +1,48 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Permiso para acceso a Internet, necesario para las peticiones HTTP -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <application
+        android:usesCleartextTraffic="true"
+        android:label="lily_ia"
+        android:icon="@mipmap/ic_launcher"
+        android:theme="@style/LaunchTheme"> <!-- El tema de la aplicación debe estar aquí -->
+
+        <activity
+            android:name="com.example.lily_ia.MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:taskAffinity=""
+            android:theme="@style/LaunchTheme"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
+            android:hardwareAccelerated="true"
+            android:windowSoftInputMode="adjustResize">
+
+            <!-- Especifica un tema Android para aplicar a esta Activity cuando el proceso Android se inicia -->
+            <meta-data
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme" />
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+
+        <!-- Meta-data utilizada por Flutter para registrar plugins -->
+        <meta-data
+            android:name="flutterEmbedding"
+            android:value="2" />
+    </application>
+
+    <!-- Queries: Permiso necesario para consultar actividades que pueden procesar texto.
+         Utilizado por el plugin de texto en el motor Flutter -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.PROCESS_TEXT"/>
+            <data android:mimeType="text/plain"/>
+        </intent>
+    </queries>
+
+</manifest>
