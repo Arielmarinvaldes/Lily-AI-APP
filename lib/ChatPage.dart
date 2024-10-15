@@ -1,3 +1,4 @@
+import 'dart:async'; // Para usar Timer
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -5,13 +6,13 @@ import 'dart:io'; // Para manejar archivos
 import 'package:image_picker/image_picker.dart'; // Paquete para seleccionar imágenes
 import 'gradient_background.dart';
 import 'main.dart';
-import 'dart:async'; // Para usar Timer
-import 'dart:math'; // Para generar colores aleatorios
+import 'sphere3dview.dart'; // Asegúrate de importar tu esfera
 
 class ChatPage extends StatefulWidget {
   final String userEmail;
+  final int numCuentas; // Aceptar el número de cuentas activas
 
-  ChatPage({required this.userEmail});
+  ChatPage({required this.userEmail, required this.numCuentas}); // Asegurarse de que se pase el número de cuentas
 
   @override
   _ChatPageState createState() => _ChatPageState();
@@ -25,33 +26,50 @@ class _ChatPageState extends State<ChatPage> {
   bool isDarkMode = false; // Modo oscuro
   bool isTyping = false; // Indicador de "Escribiendo..."
   bool isSearching = false; // Indicador de búsqueda activa
+  bool isConnected = true; // Variable para representar el estado de la conexión
   final ScrollController _scrollController = ScrollController(); // ScrollController para la lista de mensajes
   File? _profileImage; // Variable para almacenar la imagen de perfil seleccionada
   final ImagePicker _picker = ImagePicker(); // Instancia para seleccionar imágenes
-  Color _iconColor = Colors.black; // Color inicial del icono
-  final Random _random = Random(); // Instancia para generar colores aleatorios
+  late Timer _connectionTimer; // Timer para verificar la conexión
 
   @override
   void initState() {
     super.initState();
     _filteredMessages = _messages; // Inicialmente, no hay filtro
-    _startColorChange(); // Iniciar el cambio de colores al iniciar la página
+    _startConnectionCheck(); // Iniciar la verificación de la conexión
   }
 
-  // Función para iniciar el cambio de colores con animación suave
-  void _startColorChange() {
-    setState(() {
-      // Cambiar el color cada vez que se llama esta función
-      _iconColor = Color.fromRGBO(
-        _random.nextInt(256),
-        _random.nextInt(256),
-        _random.nextInt(256),
-        1,
-      );
-    });
+  @override
+  void dispose() {
+    _connectionTimer.cancel(); // Cancelar el timer cuando se cierre la página
+    super.dispose();
+  }
 
-    // Repetimos el proceso cada 3 segundos con suavidad
-    Future.delayed(Duration(seconds: 1), _startColorChange);
+  // Función para iniciar el chequeo de conexión cada 3 segundos
+  void _startConnectionCheck() {
+    _connectionTimer = Timer.periodic(Duration(seconds: 3), (timer) async {
+      await _checkConnection();
+    });
+  }
+
+  // Función para verificar la conexión con el servidor
+  Future<void> _checkConnection() async {
+    try {
+      final response = await http.get(Uri.parse('https://edb3-66-81-164-114.ngrok-free.app/ping')); // Cambia la ruta al endpoint adecuado
+      if (response.statusCode == 200) {
+        setState(() {
+          isConnected = true; // Conexión exitosa
+        });
+      } else {
+        setState(() {
+          isConnected = false; // Respuesta del servidor no es exitosa
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isConnected = false; // Error de conexión
+      });
+    }
   }
 
   // Función para enviar un mensaje
@@ -222,7 +240,7 @@ class _ChatPageState extends State<ChatPage> {
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   'Configuraciones',
-                  style: TextStyle(color: Colors.white, fontSize: 15),
+                  style: TextStyle(color: Colors.white, fontSize: 18),
                 ),
               ),
               ListTile(
@@ -231,11 +249,14 @@ class _ChatPageState extends State<ChatPage> {
                   'Modo Oscuro',
                   style: TextStyle(color: Colors.white, fontSize: 13),
                 ),
-                trailing: Switch(
-                  value: isDarkMode,
-                  onChanged: (value) {
-                    _toggleDarkMode();
-                  },
+                trailing: Transform.scale(
+                  scale: 0.8,  // Ajusta el valor para reducir el tamaño, por ejemplo, 0.8 es el 80% del tamaño original
+                  child: Switch(
+                    value: isDarkMode,
+                    onChanged: (value) {
+                      _toggleDarkMode();
+                    },
+                  ),
                 ),
               ),
               Spacer(),
@@ -313,46 +334,63 @@ class _ChatPageState extends State<ChatPage> {
               children: [
                 // Barra superior con el icono de engranaje y lupa
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                  padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 45.0),
                   child: Row(
                     children: [
+                      // Ícono de ajustes a la izquierda
                       Builder(
                         builder: (context) => IconButton(
-                          icon: Icon(Icons.settings, color: isDarkMode ? Colors.white : Colors.black),
+                          icon: Icon(Icons.settings, color: isDarkMode ? Colors.white : Colors.black, size: 30),
                           onPressed: () {
                             Scaffold.of(context).openDrawer();
                           },
                         ),
                       ),
-                      SizedBox(width: 8),
+
+                      // Mostrar un campo de búsqueda cuando esté activado el modo de búsqueda
                       Expanded(
                         child: isSearching
-                            ? TextField(
-                          controller: _searchController,
-                          onChanged: (value) {
-                            _searchMessages(value);
-                          },
-                          decoration: InputDecoration(
-                            hintText: 'Buscar...',
-                            hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black54),
-                            filled: true,
-                            fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
+                            ? Stack(
+                          alignment: Alignment.centerRight,  // Alineamos el input con el ícono de "X" a la derecha
+                          children: [
+                            TextField(
+                              controller: _searchController,
+                              onChanged: (value) {
+                                _searchMessages(value);
+                              },
+                              decoration: InputDecoration(
+                                hintText: 'Buscar...',
+                                hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black54),
+                                filled: true,
+                                fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                contentPadding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                              ),
                             ),
-                          ),
+                          ],
                         )
-                            : Text(
-                          "Tati-AI",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode ? Colors.white : Colors.black,
+                            : Padding(
+                          padding: EdgeInsets.only(left: 2),
+                          child: Text(
+                            "Tati-AI",
+                            style: TextStyle(
+                              fontSize: 18, // Ajusta el tamaño del texto aquí
+                              fontWeight: FontWeight.bold,
+                              color: isDarkMode ? Colors.white : Colors.black,
+                            ),
                           ),
                         ),
                       ),
+
+                      // Ícono que alterna entre la lupa y la "X"
                       IconButton(
-                        icon: Icon(isSearching ? Icons.close : Icons.search, color: isDarkMode ? Colors.white : Colors.black),
+                        icon: Icon(
+                          isSearching ? Icons.close : Icons.search,  // Alterna entre "X" y lupa
+                          color: isDarkMode ? Colors.white : Colors.black,
+                          size: 30,
+                        ),
                         onPressed: () {
                           setState(() {
                             if (isSearching) {
@@ -366,6 +404,8 @@ class _ChatPageState extends State<ChatPage> {
                     ],
                   ),
                 ),
+
+
                 // Lista de mensajes
                 Expanded(
                   child: ListView.builder(
@@ -403,7 +443,7 @@ class _ChatPageState extends State<ChatPage> {
                           decoration: BoxDecoration(
                             color: isUserMessage
                                 ? (isDarkMode ? Colors.cyan[800] : Colors.cyan[300])
-                                : (isDarkMode ? Colors.grey[900] : Colors.grey[400]),
+                                : (isDarkMode ? Colors.grey[900] : Colors.grey[350]),
                             borderRadius: BorderRadius.only(
                               topLeft: Radius.circular(12),
                               topRight: Radius.circular(12),
@@ -450,10 +490,20 @@ class _ChatPageState extends State<ChatPage> {
                   padding: const EdgeInsets.all(8.0),
                   child: Row(
                     children: [
+                      // Ícono de WiFi que cambia según la conexión
                       IconButton(
-                        icon: Icon(Icons.attach_file, color: Colors.cyan),
-                        onPressed: _pickAndUploadImage, // Seleccionar y subir imagen
+                        icon: Icon(
+                          isConnected
+                              ? Icons.wifi // Verde si hay conexión
+                              : Icons.wifi_off, // Rojo si no hay conexión
+                          color: isConnected ? Colors.green : Colors.red,
+                        ),
+                        onPressed: () {
+                          // Verificación manual opcional
+                          _checkConnection();
+                        },
                       ),
+                      // Campo de texto de entrada de mensajes con ícono de adjuntar dentro
                       Expanded(
                         child: TextField(
                           controller: _messageController,
@@ -462,38 +512,58 @@ class _ChatPageState extends State<ChatPage> {
                             hintText: 'Escribe tu mensaje...',
                             hintStyle: TextStyle(color: isDarkMode ? Colors.white54 : Colors.black54),
                             border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(30),
+                              borderRadius: BorderRadius.circular(40), // Bordes redondeados
                             ),
                             filled: true,
                             fillColor: isDarkMode ? Colors.grey[800] : Colors.grey[200],
+                            // Añadimos un ícono de adjuntar dentro del TextField
+                            suffixIcon: IconButton(
+                              icon: Icon(Icons.attach_file, color: Color(0xFF46F4B3)),
+                              onPressed: _pickAndUploadImage, // Funcionalidad para subir imagen
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0), // Ajuste de padding
                           ),
                         ),
                       ),
-                      SizedBox(width: 6),
-                      FloatingActionButton(
-                        onPressed: _sendMessage,
-                        child: Icon(Icons.send),
-                        backgroundColor: Colors.cyan,
+                      SizedBox(width: 8),
+                      // Botón de enviar mensaje redondeado
+                      SizedBox(
+                        width: 50,  // Ajusta el ancho
+                        height: 50, // Ajusta la altura
+                        child: FloatingActionButton(
+                          onPressed: _sendMessage,
+                          child: Icon(Icons.send, size: 20), // Ajusta el tamaño del icono
+                          backgroundColor: Color(0xFF46F4B3),  // Cambia el color de fondo del botón
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30), // Bordes redondeados
+                          ),
+                        ),
                       ),
+
                     ],
                   ),
                 ),
               ],
             ),
-            // Ícono blur_on centrado y cambiando de color aleatoriamente
-            Positioned(
-              top: 30,
-              left: 0,
-              right: 0,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Icon(
-                  Icons.blur_on,
-                  size: 35,
-                  color: _iconColor, // Color aleatorio que cambia cada segundo
+            // Añadir la esfera 3D en lugar del icono blur_on
+            if (!isSearching) // Ocultar la esfera cuando se está buscando
+              Positioned(
+                top: 30,
+                left: 0,
+                right: 0,
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    height: 40, // Ajustar el tamaño de la esfera
+                    width: 40,
+                    child: Sphere3DView(
+                      activePointsCount: widget.numCuentas, // Pasar el número de cuentas al componente de la esfera
+                      pointCount: 150, // Reducimos el número de puntos para la esfera pequeña
+                      pointSize: 1, // Reducimos el tamaño de los puntos
+                    ),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),

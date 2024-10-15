@@ -13,7 +13,7 @@ class GradientBackground extends StatelessWidget {
         gradient: LinearGradient(
           colors: isDarkMode
               ? [Color(0xFF47614A), Color(0xFF26343A)] // Colores del modo oscuro
-              : [Color(0xFFA8E6CF), Color(0xFFDCEDC1)], // Colores del modo claro
+              : [Color(0xFF71EDB4), Color(0xFFDCEDC1)], // Colores del modo claro
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           transform: GradientRotation(270 * 3.1416 / 180), // Rotación de 270 grados

@@ -11,9 +11,16 @@ class Point3D {
 }
 
 class Sphere3DView extends StatefulWidget {
-  final int activePointsCount; // Cantidad de puntos activos
+  final int activePointsCount; // Cantidad de puntos activos (cuentas registradas)
+  final int pointCount; // Cantidad de puntos totales en la esfera
+  final double pointSize; // Tamaño de los puntos
 
-  const Sphere3DView({Key? key, this.activePointsCount = 0}) : super(key: key);
+  const Sphere3DView({
+    Key? key,
+    this.activePointsCount = 0,
+    this.pointCount = 300, // Valor predeterminado de 300 puntos
+    this.pointSize = 2.0, // Tamaño predeterminado de los puntos
+  }) : super(key: key);
 
   @override
   _Sphere3DViewState createState() => _Sphere3DViewState();
@@ -24,7 +31,6 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
   Set<int> activePoints = {}; // Puntos activos
   late AnimationController _controller;
   double rotationAngle = 0.0;
-  int pointCount = 400; // Número de puntos en la esfera
 
   @override
   void initState() {
@@ -39,14 +45,15 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
       });
     });
 
-    setActivePoints(widget.activePointsCount); // Establece los puntos activos al iniciar
+    setActivePoints(widget.activePointsCount); // Establece los puntos activos (rojos) según las cuentas
   }
 
   @override
   void didUpdateWidget(Sphere3DView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.activePointsCount != oldWidget.activePointsCount) {
-      setActivePoints(widget.activePointsCount); // Actualiza los puntos activos si cambian
+    // Si se actualiza el número de cuentas activas, actualizamos los puntos rojos
+    if (oldWidget.activePointsCount != widget.activePointsCount) {
+      setActivePoints(widget.activePointsCount);
     }
   }
 
@@ -59,7 +66,7 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
   // Generar puntos 3D aleatorios en la esfera
   void generatePoints() {
     points.clear();
-    for (int i = 0; i < pointCount; i++) {
+    for (int i = 0; i < widget.pointCount; i++) {
       final theta = Random().nextDouble() * 2 * pi;
       final phi = acos(2 * Random().nextDouble() - 1);
       final x = cos(theta) * sin(phi);
@@ -69,12 +76,12 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
     }
   }
 
-  // Establecer puntos activos
+  // Establecer puntos activos (rojos) según la cantidad de cuentas registradas
   void setActivePoints(int count) {
     setState(() {
       activePoints.clear(); // Limpiar puntos anteriores
       for (int i = 0; i < count.clamp(0, points.length); i++) {
-        activePoints.add(i); // Añadir nuevos puntos activos
+        activePoints.add(i); // Añadir nuevos puntos activos (cuentas registradas)
       }
     });
   }
@@ -82,9 +89,9 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: Sphere3DPainter(points, rotationAngle, activePoints),
+      painter: Sphere3DPainter(points, rotationAngle, activePoints, widget.pointSize),
       child: Container(
-        height: 200, // Ajustar la altura de la esfera
+        height: 250, // Ajustar la altura de la esfera
         width: double.infinity,
       ),
     );
@@ -96,16 +103,16 @@ class Sphere3DPainter extends CustomPainter {
   final List<Point3D> points;
   final double rotationAngle;
   final Set<int> activePoints;
-  final Paint painter = Paint(); // Renombrar la variable para evitar conflicto
+  final double pointSize;
 
-  Sphere3DPainter(this.points, this.rotationAngle, this.activePoints);
+  Sphere3DPainter(this.points, this.rotationAngle, this.activePoints, this.pointSize);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final radius = min(size.width, size.height) / 1.4;
+    final radius = min(size.width, size.height) / 1.6;
 
     // Centrar la esfera
-    canvas.translate(size.width / 2, size.height / 0.9);
+    canvas.translate(size.width / 2, size.height / 1);
 
     for (int i = 0; i < points.length; i++) {
       final point = points[i];
@@ -119,10 +126,11 @@ class Sphere3DPainter extends CustomPainter {
       final screenY = point.y * radius;
 
       // Colorear según el estado del punto (activo o no)
-      painter.color = activePoints.contains(i) ? Colors.red : Colors.white;
+      final paint = Paint()
+        ..color = activePoints.contains(i) ? Colors.red : Colors.white;
 
-      // Dibujar el punto
-      canvas.drawCircle(Offset(screenX, screenY), 2, painter);
+      // Dibujar el punto con el tamaño especificado
+      canvas.drawCircle(Offset(screenX, screenY), pointSize, paint);
     }
   }
 

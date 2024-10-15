@@ -79,10 +79,10 @@ class _LoginPageState extends State<LoginPage> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        // Si el inicio de sesión es exitoso, navega a la pantalla de chat
+        // Si el inicio de sesión es exitoso, navega a la pantalla de chat y pasas el número de cuentas registradas
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => ChatPage(userEmail: data['message'])),
+          MaterialPageRoute(builder: (context) => ChatPage(userEmail: data['message'], numCuentas: numCuentas)), // Aquí pasas numCuentas
         );
       } else {
         // Si el servidor responde pero con error, mostramos el mensaje de error
