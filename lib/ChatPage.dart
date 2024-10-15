@@ -7,6 +7,7 @@ import 'package:image_picker/image_picker.dart'; // Paquete para seleccionar im�
 import 'gradient_background.dart';
 import 'main.dart';
 import 'sphere3dview.dart'; // Asegúrate de importar tu esfera
+import 'utils.dart'; // Importamos la función de actualizar estado
 
 class ChatPage extends StatefulWidget {
   final String userEmail;
@@ -19,6 +20,8 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
+  late Timer _statusUpdateTimer; // Timer para la actualización
+  List<int> _connectionStates = []; // Lista para almacenar los estados de conexión
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _searchController = TextEditingController(); // Controlador para la barra de búsqueda
   final List<Map<String, dynamic>> _messages = [];
@@ -37,12 +40,22 @@ class _ChatPageState extends State<ChatPage> {
     super.initState();
     _filteredMessages = _messages; // Inicialmente, no hay filtro
     _startConnectionCheck(); // Iniciar la verificación de la conexión
+    _fetchConnectionStates(); // Obtener los estados de conexión
+    _startStatusUpdate(); // Iniciar el Timer
   }
 
   @override
   void dispose() {
     _connectionTimer.cancel(); // Cancelar el timer cuando se cierre la página
+    _statusUpdateTimer.cancel();
     super.dispose();
+  }
+
+  // Iniciar el Timer para actualizar los estados de conexión
+  void _startStatusUpdate() {
+    _statusUpdateTimer = Timer.periodic(Duration(seconds: 5), (timer) async {
+      await _fetchConnectionStates();
+    });
   }
 
   // Función para iniciar el chequeo de conexión cada 3 segundos
@@ -71,6 +84,7 @@ class _ChatPageState extends State<ChatPage> {
       });
     }
   }
+
 
   // Función para enviar un mensaje
   void _sendMessage() async {
@@ -225,6 +239,39 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
+  // Cerrar sesión con la actualización del estado de conexión
+  Future<void> logout() async {
+    await actualizarEstadoConexion_logout(widget.userEmail, 0); // Actualizamos el estado a desconectado
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (context) => LoginPage()),
+          (Route<dynamic> route) => false,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Has cerrado sesión')),
+    );
+  }
+
+  Future<void> _fetchConnectionStates() async {
+    final String apiUrl = "https://your-server-url.com/get_connection_states"; // Cambia esto a tu URL
+
+    try {
+      final response = await http.get(Uri.parse(apiUrl));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          _connectionStates = List<int>.from(data['connection_states']); // Actualizamos los estados de conexión
+        });
+      } else {
+        print('Error al obtener los estados de conexión: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error de conexión: $e');
+    }
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -308,15 +355,9 @@ class _ChatPageState extends State<ChatPage> {
                         'Cerrar sesión',
                         style: TextStyle(color: Colors.white),
                       ),
-                      onTap: () {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (context) => LoginPage()),
-                              (Route<dynamic> route) => false,
-                        );
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Has cerrado sesión')),
-                        );
+                      onTap: () async {
+                        // Llamar a la función de logout para actualizar el estado de conexión
+                        await logout();  // Llamada a la función de logout
                       },
                     ),
                   ],
@@ -557,9 +598,9 @@ class _ChatPageState extends State<ChatPage> {
                     height: 40, // Ajustar el tamaño de la esfera
                     width: 40,
                     child: Sphere3DView(
-                      activePointsCount: widget.numCuentas, // Pasar el número de cuentas al componente de la esfera
+                      connectionStates: _connectionStates,  // Pasar la lista de estados de conexión
                       pointCount: 150, // Reducimos el número de puntos para la esfera pequeña
-                      pointSize: 1, // Reducimos el tamaño de los puntos
+                      pointSize: 1,    // Reducimos el tamaño de los puntos
                     ),
                   ),
                 ),

@@ -11,13 +11,14 @@ class Point3D {
 }
 
 class Sphere3DView extends StatefulWidget {
-  final int activePointsCount; // Cantidad de puntos activos (cuentas registradas)
+  final List<int> connectionStates; // Lista de estados de conexión (1 = conectado, 0 = desconectado)
   final int pointCount; // Cantidad de puntos totales en la esfera
   final double pointSize; // Tamaño de los puntos
 
   const Sphere3DView({
     Key? key,
-    this.activePointsCount = 0,
+
+    required this.connectionStates, // Lista de estados de conexión
     this.pointCount = 300, // Valor predeterminado de 300 puntos
     this.pointSize = 2.0, // Tamaño predeterminado de los puntos
   }) : super(key: key);
@@ -28,7 +29,6 @@ class Sphere3DView extends StatefulWidget {
 
 class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderStateMixin {
   List<Point3D> points = [];
-  Set<int> activePoints = {}; // Puntos activos
   late AnimationController _controller;
   double rotationAngle = 0.0;
 
@@ -44,16 +44,14 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
         rotationAngle += 0.01; // Incrementa el ángulo de rotación
       });
     });
-
-    setActivePoints(widget.activePointsCount); // Establece los puntos activos (rojos) según las cuentas
   }
 
   @override
   void didUpdateWidget(Sphere3DView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // Si se actualiza el número de cuentas activas, actualizamos los puntos rojos
-    if (oldWidget.activePointsCount != widget.activePointsCount) {
-      setActivePoints(widget.activePointsCount);
+    // Si se actualizan los estados de conexión, también actualizamos la esfera
+    if (oldWidget.connectionStates != widget.connectionStates) {
+      setState(() {});
     }
   }
 
@@ -76,20 +74,10 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
     }
   }
 
-  // Establecer puntos activos (rojos) según la cantidad de cuentas registradas
-  void setActivePoints(int count) {
-    setState(() {
-      activePoints.clear(); // Limpiar puntos anteriores
-      for (int i = 0; i < count.clamp(0, points.length); i++) {
-        activePoints.add(i); // Añadir nuevos puntos activos (cuentas registradas)
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      painter: Sphere3DPainter(points, rotationAngle, activePoints, widget.pointSize),
+      painter: Sphere3DPainter(points, rotationAngle, widget.connectionStates, widget.pointSize),
       child: Container(
         height: 250, // Ajustar la altura de la esfera
         width: double.infinity,
@@ -102,10 +90,10 @@ class _Sphere3DViewState extends State<Sphere3DView> with SingleTickerProviderSt
 class Sphere3DPainter extends CustomPainter {
   final List<Point3D> points;
   final double rotationAngle;
-  final Set<int> activePoints;
+  final List<int> connectionStates; // Lista de estados de conexión
   final double pointSize;
 
-  Sphere3DPainter(this.points, this.rotationAngle, this.activePoints, this.pointSize);
+  Sphere3DPainter(this.points, this.rotationAngle, this.connectionStates, this.pointSize);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -125,14 +113,22 @@ class Sphere3DPainter extends CustomPainter {
       final screenX = rotatedX * radius;
       final screenY = point.y * radius;
 
-      // Colorear según el estado del punto (activo o no)
+      // Determinar el color del punto:
+      // - Verde si el usuario está conectado (connectionStates[i] == 1)
+      // - Rojo si es una cuenta registrada pero está desconectada (connectionStates[i] == 0)
+      // - Blanco para el resto de los puntos
       final paint = Paint()
-        ..color = activePoints.contains(i) ? Colors.red : Colors.white;
+        ..color = (i < connectionStates.length)
+            ? (connectionStates[i] == 1
+            ? Colors.green  // Conectado (verde)
+            : Colors.red)   // Registrado pero desconectado (rojo)
+            : Colors.white;     // No registrado (blanco)
 
       // Dibujar el punto con el tamaño especificado
       canvas.drawCircle(Offset(screenX, screenY), pointSize, paint);
     }
   }
+
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
