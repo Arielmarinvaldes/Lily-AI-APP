@@ -16,7 +16,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Función para hacer la solicitud POST a la API de Flask
   Future<void> register() async {
-    final String apiUrl = "http://192.168.172.86:5001/register"; // Cambia la URL por la correcta
+    final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/register"; // Cambia la URL por la correcta
 
     final response = await http.post(
       Uri.parse(apiUrl),
