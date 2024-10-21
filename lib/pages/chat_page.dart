@@ -4,10 +4,10 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'dart:io'; // Para manejar archivos
 import 'package:image_picker/image_picker.dart'; // Paquete para seleccionar imágenes
-import 'gradient_background.dart';
-import 'main.dart';
-import 'sphere3dview.dart'; // Asegúrate de importar tu esfera
-import 'utils.dart'; // Importamos la función de actualizar estado
+import '../widgets/gradient_background.dart';
+import '../widgets/sphere3dview.dart'; // Asegúrate de importar tu esfera
+import '../utils/utils.dart';
+import 'login_page.dart'; // Importamos la función de actualizar estado
 
 class ChatPage extends StatefulWidget {
   final String userEmail;
@@ -21,19 +21,23 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   late Timer _statusUpdateTimer; // Timer para la actualización
-  List<int> _connectionStates = []; // Lista para almacenar los estados de conexión
+  List<int> connectionStates = []; // Lista para almacenar los estados de conexión
+  List<Map<String, dynamic>> _filteredMessages = []; // Lista para los mensajes filtrados
   final TextEditingController _messageController = TextEditingController();
   final TextEditingController _searchController = TextEditingController(); // Controlador para la barra de búsqueda
   final List<Map<String, dynamic>> _messages = [];
-  List<Map<String, dynamic>> _filteredMessages = []; // Lista para los mensajes filtrados
+  final ScrollController _scrollController = ScrollController(); // ScrollController para la lista de mensajes
+  final ImagePicker _picker = ImagePicker(); // Instancia para seleccionar imágenes
+  late Timer _connectionTimer; // Timer para verificar la conexión
+
   bool isDarkMode = false; // Modo oscuro
   bool isTyping = false; // Indicador de "Escribiendo..."
   bool isSearching = false; // Indicador de búsqueda activa
   bool isConnected = true; // Variable para representar el estado de la conexión
-  final ScrollController _scrollController = ScrollController(); // ScrollController para la lista de mensajes
+
   File? _profileImage; // Variable para almacenar la imagen de perfil seleccionada
-  final ImagePicker _picker = ImagePicker(); // Instancia para seleccionar imágenes
-  late Timer _connectionTimer; // Timer para verificar la conexión
+
+
 
   @override
   void initState() {
@@ -68,8 +72,11 @@ class _ChatPageState extends State<ChatPage> {
   // Función para verificar la conexión con el servidor
   Future<void> _checkConnection() async {
     try {
-      final response = await http.get(Uri.parse('https://edb3-66-81-164-114.ngrok-free.app/ping')); // Cambia la ruta al endpoint adecuado
-      if (response.statusCode == 200) {
+      // final response = await http.get(Uri.parse('https://edb3-66-81-164-114.ngrok-free.app/ping')); // Cambia la ruta al endpoint adecuado
+    final response = await http.get(Uri.parse('http://192.168.96.13:5001/ping')); // Cambia la ruta al endpoint adecuado
+
+    if (response.statusCode == 200) {
+
         setState(() {
           isConnected = true; // Conexión exitosa
         });
@@ -119,7 +126,8 @@ class _ChatPageState extends State<ChatPage> {
 
   // Función para enviar la pregunta a la API y recibir una respuesta
   Future<String?> _sendQuestionToApi(String question) async {
-    final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/preguntar"; // Cambia la URL a la correcta
+    // final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/preguntar"; // Cambia la URL a la correcta
+    final String apiUrl = "http://192.168.96.13:5001/preguntar";
     try {
       final response = await http.post(
         Uri.parse(apiUrl),
@@ -166,7 +174,9 @@ class _ChatPageState extends State<ChatPage> {
         _filteredMessages = _messages;
       });
 
-      final String uploadUrl = "https://edb3-66-81-164-114.ngrok-free.app/subir_imagen"; // Cambia la URL a la correcta
+      // final String uploadUrl = "https://edb3-66-81-164-114.ngrok-free.app/subir_imagen"; // Cambia la URL a la correcta
+      final String uploadUrl = "http://192.168.96.13:5001/subir_imagen";
+
       final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
       request.files.add(await http.MultipartFile.fromPath('file', image.path));
 
@@ -252,23 +262,28 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
+  // Función para obtener los estados de conexión de las cuentas
   Future<void> _fetchConnectionStates() async {
-    final String apiUrl = "https://your-server-url.com/get_connection_states"; // Cambia esto a tu URL
+    // final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/obtener_estado_usuarios"; // Ajusta tu URL
+    final String apiUrl = "http://192.168.96.13:5001/obtener_estado_usuarios";
 
     try {
       final response = await http.get(Uri.parse(apiUrl));
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final List<dynamic> data = jsonDecode(response.body);
+
         setState(() {
-          _connectionStates = List<int>.from(data['connection_states']); // Actualizamos los estados de conexión
+          // Almacenar los estados de conexión (0 o 1) en connectionStates
+          connectionStates = data.map((usuario) => usuario['conectado'] as int).toList();
         });
       } else {
-        print('Error al obtener los estados de conexión: ${response.statusCode}');
+        print('Error: No se pudo obtener los estados de conexión');
       }
     } catch (e) {
-      print('Error de conexión: $e');
+      print('Error de conexión: No se pudo conectar con el servidor.');
     }
   }
+
 
 
 
@@ -598,7 +613,7 @@ class _ChatPageState extends State<ChatPage> {
                     height: 40, // Ajustar el tamaño de la esfera
                     width: 40,
                     child: Sphere3DView(
-                      connectionStates: _connectionStates,  // Pasar la lista de estados de conexión
+                      connectionStates: connectionStates,  // Pasar la lista de estados de conexión
                       pointCount: 150, // Reducimos el número de puntos para la esfera pequeña
                       pointSize: 1,    // Reducimos el tamaño de los puntos
                     ),

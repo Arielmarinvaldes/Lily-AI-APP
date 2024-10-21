@@ -107,7 +107,7 @@ class Sphere3DPainter extends CustomPainter {
 
       // Aplicar la rotación en el eje Z
       final rotatedX = point.x * cos(rotationAngle) - point.z * sin(rotationAngle);
-      final rotatedZ = point.x * sin(rotationAngle) + point.z * cos(rotationAngle);
+      // final rotatedZ = point.x * sin(rotationAngle) + point.z * cos(rotationAngle);
 
       // Coordenadas en pantalla
       final screenX = rotatedX * radius;

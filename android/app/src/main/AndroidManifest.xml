@@ -1,13 +1,17 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.lily_ia">
 
     <!-- Permiso para acceso a Internet, necesario para las peticiones HTTP -->
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config"
         android:label="lily_ia"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@style/LaunchTheme"> <!-- El tema de la aplicación debe estar aquí -->
+        android:theme="@style/LaunchTheme"
+        tools:targetApi="n"> <!-- El tema de la aplicación debe estar aquí -->
 
         <activity
             android:name="com.example.lily_ia.MainActivity"

@@ -3,7 +3,6 @@
     <domain-config cleartextTrafficPermitted="true">
         <domain includeSubdomains="true">edb3-66-81-164-114.ngrok-free.app</domain>
         <domain includeSubdomains="true">192.168.1.133</domain>
-        <domain includeSubdomains="true">192.168.1.134</domain>
-        <domain includeSubdomains="true">92.168.172.86</domain>
+        <domain includeSubdomains="true">192.168.96.13</domain>
     </domain-config>
 </network-security-config>

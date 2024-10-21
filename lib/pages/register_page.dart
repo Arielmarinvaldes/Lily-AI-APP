@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'gradient_background.dart';
-import 'main.dart';
+import '../widgets/gradient_background.dart';
+import 'login_page.dart';
 
 class RegisterPage extends StatefulWidget {
   @override
@@ -16,7 +16,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // Función para hacer la solicitud POST a la API de Flask
   Future<void> register() async {
-    final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/register"; // Cambia la URL por la correcta
+    // final String apiUrl = "https://edb3-66-81-164-114.ngrok-free.app/register"; // Cambia la URL por la correcta
+    final String apiUrl = "http://192.168.172.86:5001/register";
 
     final response = await http.post(
       Uri.parse(apiUrl),
@@ -97,25 +98,3 @@ class _RegisterPageState extends State<RegisterPage> {
     );
   }
 }
-// Expanded(
-// child: ListView.builder(
-// controller: _scrollController,
-// itemCount: _messages.length + (isTyping ? 1 : 0), // Añadimos un elemento si está "escribiendo"
-// itemBuilder: (context, index) {
-// if (isTyping && index == _messages.length) {
-// // Mostrar el indicador de "Escribiendo..." como el último elemento
-// return Align(
-// alignment: Alignment.centerLeft,
-// child: Container(
-// margin: EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-// padding: EdgeInsets.all(12),
-// child: Text(
-// "Escribiendo...",
-// style: TextStyle(
-// color: isDarkMode ? Colors.white : Colors.black,
-// fontStyle: FontStyle.italic,
-// ),
-// ),
-// ),
-// );
-// }
